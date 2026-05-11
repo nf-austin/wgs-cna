@@ -30,9 +30,38 @@ The pipeline preprocesses raw FASTQ files through trimming, alignment, and dupli
 
 ---
 
-## Installation
+## Running from GitHub (no clone needed)
 
-Clone the repository and initialise the `fastq-preprocess` submodule:
+Nextflow can pull and run this pipeline straight from GitHub — only Nextflow and Docker/Singularity need to be installed locally. The `fastq-preprocess` submodule is fetched automatically thanks to `manifest.recurseSubmodules = true` in `nextflow.config`.
+
+```bash
+nextflow run nf-austin/wgs-cna \
+    -profile docker \
+    --fastqs "data/*_{1,2}.fastq.gz"
+```
+
+Pin to a specific release tag for reproducibility:
+
+```bash
+nextflow run nf-austin/wgs-cna \
+    -r v1.0.0 \
+    -profile docker \
+    --fastqs "data/*_{1,2}.fastq.gz"
+```
+
+Nextflow caches the pipeline under `~/.nextflow/assets/`. To pull a fresh copy after an update:
+
+```bash
+nextflow pull nf-austin/wgs-cna
+```
+
+> **Note**: `recurseSubmodules` requires Nextflow ≥ 22.10. If you are stuck on an older version, clone the repo manually as described below.
+
+---
+
+## Installation (local clone)
+
+If you prefer a local checkout — e.g. to modify the code — clone the repository and initialise the `fastq-preprocess` submodule:
 
 ```bash
 git clone https://github.com/<your-org>/wgs-cna.git

@@ -11,6 +11,14 @@ include { CNA            } from './subworkflows/cna'
 workflow {
     if (!params.fastqs) { error "Please provide input FASTQ files using --fastqs" }
 
+    // lp-WGS overrides the standard-WGS defaults for these tuning parameters.
+    // Applied here (not in nextflow.config) because Nextflow 26+ rejects top-level
+    // if-statements in config files.
+    def cna_window_size = params.run_lp_wgs ? 1000000                          : params.cna_window_size
+    def ichorcna_ploidy = params.run_lp_wgs ? "c(2,3)"                         : params.ichorcna_ploidy
+    def ichorcna_normal = params.run_lp_wgs ? "c(0.5,0.6,0.7,0.8,0.9,0.95)"    : params.ichorcna_normal
+    def ichorcna_txn_e  = params.run_lp_wgs ? 0.9999                           : params.ichorcna_txn_e
+
     ch_fastqs = Channel.fromFilePairs(params.fastqs, checkIfExists: true)
         .map { key, reads ->
             def sample = key.replaceAll(/_L\d{3}$/, '')
@@ -25,7 +33,7 @@ workflow {
     }
 
     // Resolve resource paths (fallback to auto-download URLs)
-    def window_str = params.cna_window_size.toString()
+    def window_str = cna_window_size.toString()
     def res        = params.ichorcna_resources?.get(params.genome)
     def url_gc     = res?.get(window_str)?.gc_wig
     def url_map    = res?.get(window_str)?.map_wig
@@ -51,17 +59,17 @@ workflow {
 
     CNA(
         ALIGN.out.bam_bai,
-        params.cna_window_size,
+        cna_window_size,
         params.cna_min_mapq,
         ch_gc_wig,
         ch_map_wig,
         ch_pon_rds,
         ch_centromere_txt,
         params.genome,
-        params.ichorcna_ploidy,
-        params.ichorcna_normal,
+        ichorcna_ploidy,
+        ichorcna_normal,
         params.ichorcna_max_cn,
-        params.ichorcna_txn_e,
+        ichorcna_txn_e,
         params.ichorcna_txn_strength
     )
 

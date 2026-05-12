@@ -23,27 +23,30 @@ process ICHORCNA {
     path "*.RData", emit: rdata
 
     script:
-    def pon_arg = pon_rds.name != 'NO_PON' ? "--normalPanel ${pon_rds}" : ""
-    def centro_arg = centromere_txt.name != 'NO_CENTRO' ? "--centromere ${centromere_txt}" : ""
-
+    def pon_arg = pon_rds.name != 'NO_PON' ? "normal_panel='${pon_rds}'," : 'normal_panel=NULL,'
+    def centro_arg = centromere_txt.name != 'NO_CENTRO' ? "centromere='${centromere_txt}'," : ''
     """
-    runIchorCNA.R \\
-        --id ${meta.id} \\
-        --WIG ${wig} \\
-        --gcWig ${gc_wig} \\
-        --mapWig ${map_wig} \\
-        --genomeBuild ${genome_build} \\
-        ${pon_arg} \\
-        ${centro_arg} \\
-        --ploidy "${ploidy}" \\
-        --normal "${normal}" \\
-        --maxCN ${max_cn} \\
-        --txnE ${txn_e} \\
-        --txnStrength ${txn_strength} \\
-        --includeHOMD False \\
-        --estimateNormal True \\
-        --estimatePloidy True \\
-        --estimateScPrevalence True \\
-        --outDir ./
+    #!/usr/bin/env Rscript
+    library("ichorCNA")
+
+    run_ichorCNA(
+        tumor_wig='${wig}',
+        id='${meta.id}',
+        cores=${task.cpus},
+        gcWig='${gc_wig}',
+        mapWig='${map_wig}',
+        ${pon_arg}
+        ${centro_arg}
+        ploidy='${ploidy}',
+        normal='${normal}',
+        maxCN=${max_cn},
+        txnE=${txn_e},
+        txnStrength=${txn_strength},
+        includeHOMD=FALSE,
+        estimateNormal=TRUE,
+        estimatePloidy=TRUE,
+        estimateScPrevalence=TRUE,
+        outDir='.'
+    )
     """
 }

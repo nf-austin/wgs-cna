@@ -37,6 +37,8 @@ process ICHORCNA {
         mapWig='${map_wig}',
         ${pon_arg}
         ${centro_arg}
+        genomeBuild='${genome_build}',
+        genomeStyle='UCSC',
         ploidy='${ploidy}',
         normal='${normal}',
         maxCN=${max_cn},

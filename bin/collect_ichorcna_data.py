@@ -35,8 +35,22 @@ EVENT_LABELS: dict[str, str] = {
 
 ALTERED_EVENTS: frozenset[str] = frozenset(k for k in EVENT_LABELS if k != "NEUT")
 
-# Priority order when displaying per-sample PDF figures
-PDF_PRIORITY: list[str] = ["genomewide", "tpdf", "correct"]
+# Suffixes (after the sample-ID prefix) that identify the key ichorCNA figures.
+# Per-chromosome, per-solution, and bias plots are excluded from the report.
+IMPORTANT_PDF_SUFFIXES: frozenset[str] = frozenset({
+    "_genomeWide",
+    "_genomeWideCorrection",
+    "_genomeWide_all_sols",
+    "_tpdf",
+})
+
+# Display order within a sample's figures section
+PDF_PRIORITY: list[str] = [
+    "_genomeWide",
+    "_tpdf",
+    "_genomeWideCorrection",
+    "_genomeWide_all_sols",
+]
 
 
 # ---------------------------------------------------------------------------
@@ -133,9 +147,9 @@ def strip_suffix(name: str, suffixes: list[str]) -> str:
 
 
 def pdf_sort_key(path: Path) -> int:
-    stem = path.stem.lower()
-    for i, keyword in enumerate(PDF_PRIORITY):
-        if keyword in stem:
+    stem = path.stem
+    for i, suffix in enumerate(PDF_PRIORITY):
+        if stem.endswith(suffix):
             return i
     return len(PDF_PRIORITY)
 
@@ -143,13 +157,13 @@ def pdf_sort_key(path: Path) -> int:
 def index_pdfs_by_sample(
     pdf_paths: list[Path], sample_ids: list[str]
 ) -> dict[str, list[Path]]:
-    """Match each PDF to a sample ID by longest-prefix match on the filename stem."""
+    """Match each PDF to a sample ID by longest-prefix match; keep only important figures."""
     result: dict[str, list[Path]] = {sid: [] for sid in sample_ids}
     sorted_ids = sorted(sample_ids, key=len, reverse=True)
     for pdf_path in pdf_paths:
         stem = pdf_path.stem
         matched = next((sid for sid in sorted_ids if stem.startswith(sid)), None)
-        if matched:
+        if matched and stem[len(matched):] in IMPORTANT_PDF_SUFFIXES:
             result[matched].append(pdf_path)
     return result
 

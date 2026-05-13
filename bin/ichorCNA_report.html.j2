@@ -48,7 +48,19 @@
     padding: 4px 12px; font-size: 13px;
   }
   .metric-chip strong { color: #0052a3; }
-  .figures { display: flex; flex-direction: column; gap: 14px; }
+  .figures-toggle { margin-top: 8px; }
+  .figures-toggle summary {
+    display: inline-flex; align-items: center; gap: 6px;
+    cursor: pointer; font-size: 13px; font-weight: 600;
+    color: #0052a3; user-select: none; list-style: none;
+    padding: 5px 10px; border-radius: 4px; border: 1px solid #c0d0f0;
+    background: #eef3ff;
+  }
+  .figures-toggle summary::-webkit-details-marker { display: none; }
+  .figures-toggle summary::before { content: "▶"; font-size: 10px; transition: transform .15s; }
+  .figures-toggle[open] summary::before { transform: rotate(90deg); }
+  .figures-toggle summary:hover { background: #dde8ff; }
+  .figures { display: flex; flex-direction: column; gap: 14px; margin-top: 12px; }
   .figure-label { font-size: 12px; color: #555; margin-bottom: 4px; }
   embed { border: 1px solid #ddd; border-radius: 4px; display: block; }
 </style>
@@ -115,19 +127,22 @@
 
   <!-- Embedded PDF figures -->
   {% if sample.figures %}
-  <div class="figures">
-    {% for fig in sample.figures %}
-    <div>
-      <div class="figure-label">{{ fig.label }}</div>
-      <embed
-        src="data:application/pdf;base64,{{ fig.b64 }}"
-        type="application/pdf"
-        width="100%"
-        height="560px"
-      />
+  <details class="figures-toggle">
+    <summary>Figures ({{ sample.figures | length }})</summary>
+    <div class="figures">
+      {% for fig in sample.figures %}
+      <div>
+        <div class="figure-label">{{ fig.label }}</div>
+        <embed
+          src="data:application/pdf;base64,{{ fig.b64 }}"
+          type="application/pdf"
+          width="100%"
+          height="560px"
+        />
+      </div>
+      {% endfor %}
     </div>
-    {% endfor %}
-  </div>
+  </details>
   {% endif %}
 </div>
 {% endfor %}

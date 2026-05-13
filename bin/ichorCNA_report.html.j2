@@ -100,6 +100,13 @@
         <td>
           {% if col == "sample" %}
             <a href="#sample-{{ row[col] }}">{{ row[col] }}</a>
+          {% elif col == "qc_status" %}
+            {% set qc = row[col] if row[col] else 'N/A' %}
+            {% if qc == 'PASS' %}{% set qc_cls = 'qc-pass' %}
+            {% elif qc == 'WARN' %}{% set qc_cls = 'qc-warn' %}
+            {% elif qc == 'FAIL' %}{% set qc_cls = 'qc-fail' %}
+            {% else %}{% set qc_cls = 'qc-na' %}{% endif %}
+            <span class="qc-badge {{ qc_cls }}">{{ qc }}</span>
           {% elif row[col] is none or row[col] != row[col] %}
             N/A
           {% else %}
@@ -130,12 +137,14 @@
   <!-- Key metrics as chips -->
   <div class="metrics-grid">
     {% for key, label in metric_display.items() %}
+    {% if key != "qc_status" %}
     {% set val = sample.metrics.get(key) %}
     {% if val is not none and val == val %}
     <span class="metric-chip">
       <strong>{{ label }}:</strong>
       {{ "%.4g" | format(val) if val is number else val }}
     </span>
+    {% endif %}
     {% endif %}
     {% endfor %}
   </div>

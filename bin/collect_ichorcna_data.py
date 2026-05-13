@@ -66,39 +66,37 @@ def _find_col(df: pd.DataFrame, candidates: list[str]) -> str | None:
 
 
 def parse_params(path: Path) -> dict:
-    """Parse one ichorCNA params.txt; return metrics for the best solution (highest loglik)."""
-    df = pd.read_csv(path, sep="\t")
-    df.columns = df.columns.str.strip()
-    if "loglik" in df.columns:
-        df = df.sort_values("loglik", ascending=False)
-    row = df.iloc[0]
+    """Parse one ichorCNA params.txt.
 
-    wanted = {
-        "tumor_fraction":   "Tumor_Fraction",
-        "ploidy":           "Ploidy",
-        "subclone_fraction":"Subclone_Fraction",
-        "normal_fraction":  "Normal_Fraction",
-        "coverage_median":  "Coverage(median)",
-        "loglik":           "loglik",
+    The file has a mixed format: a small TSV summary at the top, then a
+    free-text 'Key:    value' block, then a tabular solution grid at the
+    bottom.  All useful metrics live in the free-text block, so we scan
+    that directly instead of using pandas.
+    """
+    kv_wanted: dict[str, str] = {
+        "Tumor Fraction":        "tumor_fraction",
+        "Ploidy":                "ploidy",
+        "Subclone Fraction":     "subclone_fraction",
+        "Coverage":              "coverage_median",
+        "GC-Map correction MAD": "mad_cor",
+        "Log-likelihood":        "loglik",
     }
     record: dict = {}
-    for out_key, src_col in wanted.items():
-        if src_col in row.index:
-            val = row[src_col]
-            try:
-                record[out_key] = float(val)
-            except (ValueError, TypeError):
-                record[out_key] = val
-
-    # GC-Map correction MAD — column name varies across ichorCNA versions
-    for mad_col in ["Coverage(MAD)", "mad.cor", "madCor", "MAD"]:
-        if mad_col in row.index:
-            try:
-                record["mad_cor"] = float(row[mad_col])
-            except (ValueError, TypeError):
-                pass
-            break
-
+    for line in path.read_text(encoding="utf-8", errors="replace").splitlines():
+        if ":" not in line:
+            continue
+        key_part, _, val_part = line.partition(":")
+        key = key_part.strip()
+        if key not in kv_wanted:
+            continue
+        # Take first whitespace-delimited token; skips "NA", multi-value lines, etc.
+        tokens = val_part.strip().split()
+        if not tokens:
+            continue
+        try:
+            record[kv_wanted[key]] = float(tokens[0])
+        except ValueError:
+            pass  # NA or non-numeric — field simply omitted
     return record
 
 
@@ -123,8 +121,8 @@ def fraction_genome_altered(path: Path) -> float | None:
 
     start_col = _find_col(df, ["start", "loc.start", "Start"])
     end_col   = _find_col(df, ["end",   "loc.end",   "End"])
-    event_col = _find_col(df, ["event", "call", "Event", "Call"])
-    cn_col    = _find_col(df, ["copy.number", "copy_number", "CN", "cn"])
+    event_col = _find_col(df, ["Corrected_Call", "event", "call", "Event", "Call"])
+    cn_col    = _find_col(df, ["Corrected_Copy_Number", "copy.number", "copy_number", "CN", "cn"])
 
     if start_col is None or end_col is None:
         return None
@@ -149,7 +147,7 @@ def segment_counts(path: Path) -> dict:
     df = pd.read_csv(path, sep="\t")
     df.columns = df.columns.str.strip()
 
-    event_col = _find_col(df, ["event", "call", "Event", "Call"])
+    event_col = _find_col(df, ["Corrected_Call", "event", "call", "Event", "Call"])
     if event_col is None:
         return {}
 
@@ -229,11 +227,11 @@ def render_html_report(
 
     # Column display config passed into the template
     metric_display = {
+        "qc_status":            "QC Status",
         "mad_cor":              "GC-Map MAD",
         "tumor_fraction":       "Tumor Fraction",
         "ploidy":               "Ploidy",
         "subclone_fraction":    "Subclone Fraction",
-        "normal_fraction":      "Normal Fraction",
         "coverage_median":      "Coverage (Median)",
         "loglik":               "Log-Likelihood",
         "fraction_genome_altered": "Fraction Genome Altered",
@@ -303,7 +301,7 @@ def main() -> None:
     summary = pd.DataFrame(rows)
     fixed = [
         "sample", "qc_status", "mad_cor", "tumor_fraction", "ploidy",
-        "subclone_fraction", "normal_fraction", "coverage_median", "loglik",
+        "subclone_fraction", "coverage_median", "loglik",
         "fraction_genome_altered",
     ]
     seg_cols = sorted(c for c in summary.columns if c.startswith("n_seg_"))

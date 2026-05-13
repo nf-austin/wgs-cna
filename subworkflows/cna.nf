@@ -1,5 +1,6 @@
-include { HMMCOPY_READCOUNTER } from '../modules/hmmcopy/readcounter/main'
-include { ICHORCNA }            from '../modules/ichorcna/main'
+include { HMMCOPY_READCOUNTER    } from '../modules/hmmcopy/readcounter/main'
+include { ICHORCNA               } from '../modules/ichorcna/main'
+include { ICHORCNA_POSTPROCESES  } from '../modules/ichorcna-postprocess/main'
 
 workflow CNA {
     take:
@@ -34,9 +35,17 @@ workflow CNA {
         txn_strength
     )
 
+    ICHORCNA_POSTPROCESES(
+        ICHORCNA.out.params_txt.map { meta, f -> f }.collect(),
+        ICHORCNA.out.seg.map        { meta, f -> f }.collect(),
+        ICHORCNA.out.plots.map      { meta, f -> f }.collect()
+    )
+
     emit:
     cna        = ICHORCNA.out.cna
     seg        = ICHORCNA.out.seg
     params_txt = ICHORCNA.out.params_txt
     plots      = ICHORCNA.out.plots
+    summary    = ICHORCNA_POSTPROCESES.out.summary
+    report     = ICHORCNA_POSTPROCESES.out.report
 }

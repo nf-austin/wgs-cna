@@ -19,7 +19,7 @@ process ICHORCNA {
     tuple val(meta), path("*.cna.seg"), emit: cna
     tuple val(meta), path("*.seg.txt"), emit: seg
     tuple val(meta), path("*.params.txt"), emit: params_txt
-    tuple val(meta), path("*.pdf"), emit: plots
+    tuple val(meta), path("**/*.pdf"), emit: plots
     path "*.RData", emit: rdata
 
     script:

@@ -200,11 +200,21 @@ results/
 └── cna/
     ├── readcounts/         # per-sample .wig read-count files
     └── ichorcna/           # per-sample ichorCNA results:
-        │                   #   {id}.cna.seg   — IGV-compatible CNA segments
-        │                   #   {id}.seg.txt   — tabular segment summary
+        │                   #   {id}.cna.seg    — IGV-compatible CNA segments
+        │                   #   {id}.seg        — segment file
+        │                   #   {id}.seg.txt    — tabular segment summary
         │                   #   {id}.params.txt — estimated tumor fraction & ploidy
+        │                   #   {id}.correctedDepth.txt — GC/mappability-corrected depth
         │                   #   {id}.RData      — full R data object
-        └──                 #   {id}_genomeWide.pdf — genome-wide CNA plot
+        └── {id}/           # per-sample plot subdirectory:
+                            #   {id}_genomeWide.pdf            — best-solution genome-wide CNA plot
+                            #   {id}_genomeWide_n{N}-p{P}.pdf  — genome-wide plot for each normal/ploidy combo
+                            #   {id}_genomeWide_all_sols.pdf   — all solutions on one page
+                            #   {id}_genomeWideCorrection.pdf  — GC/mappability correction diagnostics
+                            #   {id}_CNA_chr{chr}.pdf          — per-chromosome CNA plot
+                            #   {id}_correction_chr{chr}.pdf   — per-chromosome correction plot
+                            #   {id}_bias.pdf                  — GC/mappability bias plot
+                            #   {id}_tpdf.pdf                  — tumor fraction posterior
 ```
 
 ---

@@ -28,6 +28,7 @@ EVENT_LABELS: dict[str, str] = {
     "NEUT": "neutral",
     "GAIN": "gain",
     "AMP": "amplification",
+    "HLAMP": "high_level_amplification",
     "ASCNA": "allele_specific_cna",
     "UBCNA": "unbalanced_cna",
     "BCNA": "balanced_cna",
@@ -88,7 +89,31 @@ def parse_params(path: Path) -> dict:
                 record[out_key] = float(val)
             except (ValueError, TypeError):
                 record[out_key] = val
+
+    # GC-Map correction MAD — column name varies across ichorCNA versions
+    for mad_col in ["Coverage(MAD)", "mad.cor", "madCor", "MAD"]:
+        if mad_col in row.index:
+            try:
+                record["mad_cor"] = float(row[mad_col])
+            except (ValueError, TypeError):
+                pass
+            break
+
     return record
+
+
+# QC thresholds from ichorCNA FAQ:
+#   PASS  — MAD < 0.15 (high quality)
+#   WARN  — 0.15 ≤ MAD ≤ 0.30 (usable but elevated noise)
+#   FAIL  — MAD > 0.30 (likely too noisy)
+def qc_status(mad_cor: float | None) -> str:
+    if mad_cor is None:
+        return "N/A"
+    if mad_cor < 0.15:
+        return "PASS"
+    if mad_cor <= 0.30:
+        return "WARN"
+    return "FAIL"
 
 
 def fraction_genome_altered(path: Path) -> float | None:
@@ -204,6 +229,7 @@ def render_html_report(
 
     # Column display config passed into the template
     metric_display = {
+        "mad_cor":              "GC-Map MAD",
         "tumor_fraction":       "Tumor Fraction",
         "ploidy":               "Ploidy",
         "subclone_fraction":    "Subclone Fraction",
@@ -259,6 +285,7 @@ def main() -> None:
             record.update(parse_params(params_path))
         except Exception as exc:
             print(f"WARNING: could not parse {params_path}: {exc}", file=sys.stderr)
+        record["qc_status"] = qc_status(record.get("mad_cor"))
 
         seg_path = seg_by_sample.get(sample_id)
         if seg_path is not None:
@@ -275,8 +302,9 @@ def main() -> None:
 
     summary = pd.DataFrame(rows)
     fixed = [
-        "sample", "tumor_fraction", "ploidy", "subclone_fraction",
-        "normal_fraction", "coverage_median", "loglik", "fraction_genome_altered",
+        "sample", "qc_status", "mad_cor", "tumor_fraction", "ploidy",
+        "subclone_fraction", "normal_fraction", "coverage_median", "loglik",
+        "fraction_genome_altered",
     ]
     seg_cols = sorted(c for c in summary.columns if c.startswith("n_seg_"))
     summary  = summary[[c for c in fixed if c in summary.columns] + seg_cols]

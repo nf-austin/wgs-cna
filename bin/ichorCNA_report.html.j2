@@ -48,6 +48,16 @@
     padding: 4px 12px; font-size: 13px;
   }
   .metric-chip strong { color: #0052a3; }
+  /* QC badges */
+  .qc-badge {
+    display: inline-block; padding: 2px 9px; border-radius: 12px;
+    font-size: 11px; font-weight: 700; vertical-align: middle; margin-left: 8px;
+  }
+  .qc-pass { background: #d4edda; color: #155724; border: 1px solid #b1dfbb; }
+  .qc-warn { background: #fff3cd; color: #856404; border: 1px solid #ffeeba; }
+  .qc-fail { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+  .qc-na   { background: #e2e3e5; color: #495057; border: 1px solid #ced4da; }
+
   .figures-toggle { margin-top: 8px; }
   .figures-toggle summary {
     display: inline-flex; align-items: center; gap: 6px;
@@ -110,7 +120,12 @@
 
 {% for sample in samples %}
 <div class="sample-block" id="sample-{{ sample.id }}">
-  <h3>{{ sample.id }}</h3>
+  {% set qc = sample.metrics.get('qc_status', 'N/A') %}
+  {% if qc == 'PASS' %}{% set qc_cls = 'qc-pass' %}
+  {% elif qc == 'WARN' %}{% set qc_cls = 'qc-warn' %}
+  {% elif qc == 'FAIL' %}{% set qc_cls = 'qc-fail' %}
+  {% else %}{% set qc_cls = 'qc-na' %}{% endif %}
+  <h3>{{ sample.id }}<span class="qc-badge {{ qc_cls }}">{{ qc }}</span></h3>
 
   <!-- Key metrics as chips -->
   <div class="metrics-grid">

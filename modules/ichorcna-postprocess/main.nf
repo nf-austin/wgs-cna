@@ -13,6 +13,7 @@ process ICHORCNA_POSTPROCESES {
 
     script:
     """
+    export PATH=/opt/conda/bin:\$PATH
     collect_ichorcna_data.py \\
         --params ${params_txts} \\
         --segs   ${seg_txts} \\
